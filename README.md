@@ -1,3 +1,3 @@
 # dp
-Forked from https://github.com/nicholas-leonard/dp</ br>
-Doc at http://dp.readthedocs.org/en/latest/</ br>
+Forked from https://github.com/nicholas-leonard/dp
+Doc at http://dp.readthedocs.org/en/latest/
