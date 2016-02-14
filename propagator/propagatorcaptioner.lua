@@ -153,6 +153,7 @@ end
 function PropagatorCaptioner:forward(batch)
    local input = batch:inputs():input()
    local target = batch:targets():input()
+   temp = target
    target = self._target_module:forward(target)
    if self._include_target then
       input = {input, target}
@@ -162,7 +163,16 @@ function PropagatorCaptioner:forward(batch)
    
    -- forward propagate through model
    self.output = self._model:forward(input)
-   
+   --print (target)
+   print ('---target---')
+   for i = 1, 16 do
+      if target[1][i] ~= 1 then
+        io.write (ds._flickr8k[4][tostring(target[1][i]-1)])
+        io.write (' ')
+      end
+   end
+   --io.read(1)
+   io.write ("\n")
    --#TODO: add a module to specifically deal with the data format convertion
    -- change the self.output format, so that it can be dealt with the loss:forward()
    self._temp_output = {}

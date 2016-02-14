@@ -17,7 +17,7 @@ Flickr8k._feature_size = 3 * 256 * 256
 function Flickr8k:__init(config)
     print("entering __init()...")
     config = config or {}
-    print("flickr8k config:", config)
+    self.debug = true
     assert(torch.type(config) == 'table' and not config[1],
         "Constructor requires key-value arguments")
     local args, load_all, input_preprocess, target_preprocess
@@ -112,6 +112,7 @@ function Flickr8k:__init(config)
         input_preprocess = input_preprocess,
         target_preprocess = target_preprocess
     })
+
 end
 
 --- Load the files
@@ -119,8 +120,19 @@ function Flickr8k:setup()
     --#TODO: add download data from url script
 
     --1. read data file
-    print("Loading flickr8k data.h5 file ...")
-    local h5_filepath = self._data_path .. '/' .. 'data.h5'
+    --print("Loading flickr8k data.h5 file ...")
+    --local h5_filepath = self._data_path .. '/' .. 'data_t=5.h5'
+
+    local h5_filepath
+
+    if self.debug then
+	h5_filepath = self._data_path .. '/' .. 'debug_100' .. '/' .. 'data.h5'
+	print ("Loading debug_100")
+    else
+	print("Loading flickr8k data_t=5.h5 file ...")
+        h5_filepath = self._data_path .. '/' .. 'data_t=5.h5'
+    end
+
     if self:exists(h5_filepath) then print("Done.") else return end
     local h5_file = hdf5.open(h5_filepath)
     local images = h5_file:read('/images'):all()
@@ -128,8 +140,15 @@ function Flickr8k:setup()
     h5_file:close()
 
     --2. read miscs
-    print("Loading flickr8k data.json file ...")
-    local json_filepath = self._data_path .. '/' .. 'data.json'
+    --print("Loading flickr8k data.json file ...")
+    --local json_filepath = self._data_path .. '/' .. 'data.json'
+    print("Loading flickr8k data_t=5.json file ...")
+    local json_filepath = self._data_path .. '/' .. 'data_t=5.json'
+
+    if self.debug then
+	json_filepath = self._data_path .. '/' .. 'debug_100' .. '/' .. 'data.json' --overwirte if debug
+    end
+
     if self:exists(json_filepath) then print("Done.") else return end local json_file = io.open(json_filepath)
     local text = json_file:read()
     local cjson = require 'cjson'

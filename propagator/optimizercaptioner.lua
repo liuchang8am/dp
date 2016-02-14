@@ -39,7 +39,6 @@ function OptimizerCaptioner:__init(config)
    config.sampler = sampler or dp.ShuffleSampler()
    config.stats = stats
    parent.__init(self, config)
-   
 end
 
 function OptimizerCaptioner:setup(config)
