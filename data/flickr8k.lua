@@ -263,7 +263,7 @@ function Flickr8k:createDataSet(inputs, targets, which_set)
     -- class 0 will have index 1, but why do this?
     -- #TODO: does this add(1) method influence futher index mapping?
     
-    targets:add(1)
+    --targets:add(1)
   
     -- construct inputs and targets dp.Views
     local input_v, target_v = dp.ImageView(), dp.ClassView()
@@ -276,16 +276,24 @@ function Flickr8k:createDataSet(inputs, targets, which_set)
     return ds
 end
 
+--function Flickr8k:createClasses()
+--    self._classes = {}
+--    local len = self:len(self._flickr8k[4])
+--    self._classes[1] = 0
+--    for i = 1, len do
+--        self._classes[i+1] = i
+--    end
+--    return self._classes
+--end
+
 function Flickr8k:createClasses()
     self._classes = {}
     local len = self:len(self._flickr8k[4])
-    self._classes[1] = 0
     for i = 1, len do
-        self._classes[i+1] = i
+        self._classes[i] = i
     end
     return self._classes
 end
-
 
 ---------------------
 --- Utils
