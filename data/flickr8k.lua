@@ -126,7 +126,7 @@ function Flickr8k:setup()
     local h5_filepath
 
     if self.debug then
-	h5_filepath = self._data_path .. '/' .. 'debug_100' .. '/' .. 'data.h5'
+	h5_filepath = self._data_path .. '/' .. 'debug100' .. '/' .. 'data_t=5.h5'
 	print ("Loading debug_100")
     else
 	print("Loading flickr8k data_t=5.h5 file ...")
@@ -146,7 +146,7 @@ function Flickr8k:setup()
     local json_filepath = self._data_path .. '/' .. 'data_t=5.json'
 
     if self.debug then
-	json_filepath = self._data_path .. '/' .. 'debug_100' .. '/' .. 'data.json' --overwirte if debug
+	json_filepath = self._data_path .. '/' .. 'debug100' .. '/' .. 'data_t=5.json' --overwirte if debug
     end
 
     if self:exists(json_filepath) then print("Done.") else return end local json_file = io.open(json_filepath)
