@@ -167,8 +167,9 @@ function PropagatorCaptioner:forward(batch)
    print ('---target---')
    for i = 1, 16 do
       if target[1][i] ~= 1 then
-        io.write (ds._flickr8k[4][tostring(target[1][i]-1)])
+        --io.write (ds._flickr8k[4][tostring(target[1][i]-1)])
         io.write (' ')
+        LC = "LC"
       end
    end
    --io.read(1)

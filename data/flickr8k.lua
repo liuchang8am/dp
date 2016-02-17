@@ -159,6 +159,12 @@ function Flickr8k:setup()
 
     self._flickr8k = { images, sentences, images_info, ix_to_word }
 
+    self.vocab = self._flickr8k[4]
+
+    -- add the end token
+    self.vocab_size = self:len(self.vocab)+1 -- +1 for the '.' end token
+    self.vocab[tostring(self.vocab_size)] = '.' -- use '.' as the end token
+
     self._traindata = self:_setup_train()
     self._valdata = self:_setup_val()
     self._testdata = self:_setup_test()
@@ -268,6 +274,21 @@ function Flickr8k:createDataSet(inputs, targets, which_set)
     -- construct inputs and targets dp.Views
     local input_v, target_v = dp.ImageView(), dp.ClassView()
     input_v:forward(self._image_axes, inputs)
+    
+    -- add the '.' end token for each sample
+    local end_token_column = torch.FloatTensor(targets:size()[1], 1):fill(0) 
+    targets = torch.cat(targets,end_token_column) --add a column of zeros
+
+    -- replace the first occurrence of 0 to the '.' token, i.e., the vocab_size value
+    for sample = 1, targets:size()[1] do -- for each sample
+	for word = 1, targets[sample]:size()[1] do --for each word in the sample
+	    if targets[sample][word] == 0 then -- the first 0
+		targets[sample][word] = self.vocab_size -- replace with '.'
+		break -- keep the remaining zeros if exist, and jump to next sample
+	    end
+	end
+    end
+
     target_v:forward('bt', targets) -- Note: 'bt' is multi class
     target_v:setClasses(self._classes)
     -- construct dataset
