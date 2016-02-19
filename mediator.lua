@@ -137,7 +137,7 @@ function Mediator:getChannel(channelNamespace)
    if channelNamespace == ':' then
       return self.channel
    end
-   
+
    if type(channelNamespace) == 'string' then
       channelNamespace = _.split(channelNamespace, ':')
    end

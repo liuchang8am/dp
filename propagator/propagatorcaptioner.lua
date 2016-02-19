@@ -151,86 +151,115 @@ function PropagatorCaptioner:propagateBatch(batch)
     error"NotImplementedError"
 end
 
+function generated(input)
+    local size = input:size(2)
+    local maxVal = -1e5
+    local maxIdx = 0
+    for i = 1, size do 
+	if input[1][i] >= maxVal then
+	    maxVal = input[1][i]
+	    maxIdx = i
+	end
+    end
+    io.write (ds.vocab[tostring(maxIdx)])
+    io.write (' ')
+end
+
 function PropagatorCaptioner:forward(batch)
     local input = batch:inputs():input()
     local target = batch:targets():input()
     temp = target
     target = self._target_module:forward(target)
     if self._include_target then
-        input = {input, target}
+        input = { input, target }
     end
     -- useful for calling accUpdateGradParameters in callback function
     self._model.dpnn_input = input
 
     -- forward propagate through model
     self.output = self._model:forward(input)
-    --print (target)
-    --print ('---target---')
-    --for i = 1, 16 do
-    --   if target[1][i] ~= 1 then
-    --     io.write (ds._flickr8k[4][tostring(target[1][i]-1)])
-    --     io.write (' ')
-    --     LC = "LC"
-    --   end
-    --end
+    
+
+    debug = true
+
+
+    if debug then 
+
+    print('---target---')
+    for i = 1, 17 do
+        if target[1][i] ~= 1 then
+            io.write(ds.vocab[tostring(target[1][i])])
+            io.write(' ')
+        end
+    end
     --io.read(1)
-    --io.write ("\n")
+    io.write("\n")
+    end
 
-    --#TODO: add a module to specifically deal with the data format convertion
-    -- change the self.output format, so that it can be dealt with the loss:forward()
-
-    --self._temp_output = {}
-    --self._temp_output[1] = {}
-    --self._temp_output[2] = {}
-    --for k,v in pairs(self.output) do
-    --    self._temp_output[1][k] = v[1]
-    --    self._temp_output[2][k] = v[2]
-    --end
+    self._temp_output = {} --for backward format
+    self._temp_output[1] = {}
+    self._temp_output[2] = {}
+    for k, v in pairs(self.output) do
+        self._temp_output[1][k] = v[1]
+        self._temp_output[2][k] = v[2]
+    end
 
     if not self._loss then
         return
     end
-
 
     -- iterate over batch.
     -- Has to split the batch, because null token appears at diffrent
     -- location in each sample sentence in the batches.
     -- And we can't forward null tokens to the loss function.
     for batch = 1, target:size()[1] do -- for each sample in the batch, sample is target[batch]
-	
+
 	-- process the ground truth labels
-	local sample_target = target[batch]
-	local temp_target
-	local flag
-	for j = 1, sample_target:size()[1] do
-	    if sample_target[j] == 0 then flag = j-1 break end
+   	local sample_target = target[batch]
+   	local temp_target
+   	local flag
+   	for j = 1, sample_target:size()[1] do
+   	    if sample_target[j] == ds.vocab_size then flag = j - 1 break end
+   	end
+
+   	if not flag then
+   	    flag = sample_target:size()[1]
+   	end -- sentences is 17 len, sentence[17] = '.'
+
+   	temp_target = sample_target[{ { 1, flag } }]
+
+   	--for i = 1, temp_target:size()[1] do print (ds.vocab[tostring(temp_target[i])]) end
+   	--io.read(1)
+   	if self._cuda then temp_target = temp_target:cuda() end --convert to GPU if needed
+
+   	-- process the generated labels
+   	local temp_output = {}
+   	temp_output[1] = {}
+   	temp_output[2] = {}
+   	for j = 1, flag do -- clip the first flag generated words
+   	    temp_output[1][j] = torch.Tensor(1, self.output[j][1]:size()[2])
+   	    temp_output[1][j][1] = self.output[j][1][batch]
+   	    temp_output[2][j] = {}
+   	    temp_output[2][j][1] = temp_output[1][j]
+   	    temp_output[2][j][2] = self.output[j][2][2][batch]
+   	end
+
+   	if self._cuda then
+   	    temp_output[1] = temp_output[1]:cuda()
+   	    temp_output[2][1] = temp_output[2][1]:cuda()
+   	    temp_output[2][2] = temp_output[2][2]:cuda()
+   	end
+
+	print ('---generated---')
+	for i = 1, #temp_output[1] do 
+	    generated(temp_output[1][i])
+	    --_, idx = torch.max(temp_output[1][i],2) -- this line will cause the mediator.lua split point to Tensor.split error
 	end
-	if not flag then flag = sample_target:size()[1] end -- sentences is 17 len, sentence[17] = '.'
+	io.write ("\n")
 
-	temp_target = sample_target[{{1,flag}}]
-	
-	if self._cuda then temp_target = temp_target:cuda() end --convert to GPU if needed
-
-	-- process the generated labels
-	local temp_output = {}
-	temp_output[1] = {}
-	temp_output[2]  = {}
-	for j = 1, flag do -- clip the first flag generated words
-	    temp_output[1][j] = torch.Tensor(1,self.output[j][1]:size()[2])
-	    temp_output[1][j][1] = self.output[j][1][batch]
-	    temp_output[2][j] = {}
-	    temp_output[2][j][1] = temp_output[1][j]
-	    temp_output[2][j][2] = self.output[j][2][2][batch]
-	end
-
-	if self._cuda then
-	    temp_output[1] = temp_output[1]:cuda()
-	    temp_output[2][1] = temp_output[2][1]:cuda()
-	    temp_output[2][2] = temp_output[2][2]:cuda()
-	end
-
-	self._err = self._err + self._loss:forward(temp_output, temp_target)
+   	self._err = self._err + self._loss:forward(temp_output, temp_target)
     end
+    --self.err = self._loss:forward(self.output, target)
 end
 
 function PropagatorCaptioner:monitor(batch, report)

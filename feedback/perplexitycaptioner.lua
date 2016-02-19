@@ -43,11 +43,19 @@ end
 function PerplexityCaptioner:add(batch, output, report)
    assert(torch.isTypeOf(batch, 'dp.Batch'), "First argument should be dp.Batch")
    -- table outputs are expected of recurrent neural networks   
-   
-   
-   
-   
-   
+   LC= "LC"
+   local targets = batch:targets():forward('bt') -- batch x rho, targets
+   local sum = 0
+   for i = 1, #output do -- for each timestep in all batches
+     local target = targets:select(2,i) -- target is timestep i target value for all batches
+     local act = output[i][1] -- act is log, batch x vocabsize for all batches
+     for j = 1, target:size()[1] do
+       if target[j] ~= 0 then -- skip null tokens
+        sum = sum + act[j][target[j]]
+       end
+     end
+   end
+   self._nll = self._nll - sum
 end
 
 function PerplexityCaptioner:_reset()

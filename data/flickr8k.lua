@@ -15,9 +15,7 @@ Flickr8k._image_axes = 'bchw'
 Flickr8k._feature_size = 3 * 256 * 256
 
 function Flickr8k:__init(config)
-    print("entering __init()...")
     config = config or {}
-    self.debug = true
     assert(torch.type(config) == 'table' and not config[1],
         "Constructor requires key-value arguments")
     local args, load_all, input_preprocess, target_preprocess
@@ -122,6 +120,8 @@ function Flickr8k:setup()
     --1. read data file
     --print("Loading flickr8k data.h5 file ...")
     --local h5_filepath = self._data_path .. '/' .. 'data_t=5.h5'
+    
+    self.debug = false
 
     local h5_filepath
 
@@ -164,6 +164,10 @@ function Flickr8k:setup()
     -- add the end token
     self.vocab_size = self:len(self.vocab)+1 -- +1 for the '.' end token
     self.vocab[tostring(self.vocab_size)] = '.' -- use '.' as the end token
+
+    -- add the special token to replace the null tokens
+    self.vocab_size = self.vocab_size + 1
+    self.vocab[tostring(self.vocab_size)] = '#' -- use '#' as the replacement for null token
 
     self._traindata = self:_setup_train()
     self._valdata = self:_setup_val()
@@ -276,18 +280,32 @@ function Flickr8k:createDataSet(inputs, targets, which_set)
     input_v:forward(self._image_axes, inputs)
     
     -- add the '.' end token for each sample
-    local end_token_column = torch.FloatTensor(targets:size()[1], 1):fill(0) 
-    targets = torch.cat(targets,end_token_column) --add a column of zeros
+    local end_token_column = torch.FloatTensor(targets:size()[1], 1):fill(self.vocab_size) --'#'
+    targets = torch.cat(targets,end_token_column) --add a column of '#' 
 
-    -- replace the first occurrence of 0 to the '.' token, i.e., the vocab_size value
+    -- replace all the zeros with '#'
     for sample = 1, targets:size()[1] do -- for each sample
 	for word = 1, targets[sample]:size()[1] do --for each word in the sample
-	    if targets[sample][word] == 0 then -- the first 0
-		targets[sample][word] = self.vocab_size -- replace with '.'
-		break -- keep the remaining zeros if exist, and jump to next sample
+	    if targets[sample][word] == 0 then
+		targets[sample][word] = self.vocab_size
 	    end
 	end
     end
+
+    -- replace the first '#' with '.'
+    for sample = 1, targets:size()[1] do -- for each sample
+	for word = 1, targets[sample]:size()[1] do --for each word in the sample
+	    if targets[sample][word] == self.vocab_size then
+		targets[sample][word] = self.vocab_size - 1 -- replace with '.'
+		break -- keep the remaining '#' s 
+	    end
+	end
+    end
+
+    --for i = 1, 17 do print (self.vocab[tostring(targets[15][i])]) end
+    --io.read(1)
+    --for i = 1, 17 do print (self.vocab[tostring(targets[10][i])]) end
+    --io.read(1)
 
     target_v:forward('bt', targets) -- Note: 'bt' is multi class
     target_v:setClasses(self._classes)
