@@ -168,8 +168,10 @@ end
 function PropagatorCaptioner:forward(batch)
     local input = batch:inputs():input()
     local target = batch:targets():input()
-    temp = target
+    local batch_size = target:size()[1]
+
     target = self._target_module:forward(target)
+
     if self._include_target then
         input = { input, target }
     end
@@ -212,7 +214,8 @@ function PropagatorCaptioner:forward(batch)
     -- Has to split the batch, because null token appears at diffrent
     -- location in each sample sentence in the batches.
     -- And we can't forward null tokens to the loss function.
-    for batch = 1, target:size()[1] do -- for each sample in the batch, sample is target[batch]
+    self._err = 0
+    for batch = 1, batch_size do -- for each sample in the batch, sample is target[batch]
 
 	-- process the ground truth labels
    	local sample_target = target[batch]
@@ -256,9 +259,10 @@ function PropagatorCaptioner:forward(batch)
 	    --_, idx = torch.max(temp_output[1][i],2) -- this line will cause the mediator.lua split point to Tensor.split error
 	end
 	io.write ("\n")
-
    	self._err = self._err + self._loss:forward(temp_output, temp_target)
     end
+    print ("propagator self._err:", self._err)
+    io.read(1)
     --self.err = self._loss:forward(self.output, target)
 end
 

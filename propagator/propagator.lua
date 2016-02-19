@@ -152,6 +152,10 @@ function Propagator:forward(batch)
    local input = batch:inputs():input()
    local target = batch:targets():input()
    target = self._target_module:forward(target)
+
+   --print (input) io.read(1)
+   --for i = 1, #target do print (target[i]) end io.read(1)
+
    if self._include_target then
       input = {input, target}
    end
@@ -164,8 +168,10 @@ function Propagator:forward(batch)
    if not self._loss then
       return
    end
+
    -- measure loss
    self.err = self._loss:forward(self.output, target)
+   print ("propagator self.err:", self.err)
 end
 
 function Propagator:monitor(batch, report)

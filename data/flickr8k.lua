@@ -121,7 +121,7 @@ function Flickr8k:setup()
     --print("Loading flickr8k data.h5 file ...")
     --local h5_filepath = self._data_path .. '/' .. 'data_t=5.h5'
     
-    self.debug = false
+    self.debug = true
 
     local h5_filepath
 
